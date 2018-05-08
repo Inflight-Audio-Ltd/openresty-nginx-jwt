@@ -24,16 +24,67 @@ if token == nil then
     ngx.exit(ngx.HTTP_UNAUTHORIZED)
 end
 
+function invalidToken(val)
+    ngx.say("{error: \"" .. val .. " is not a valid voucher\"}")
+end
+
+-- Redis connection
+local redis = require "resty.redis"
+local red = redis:new()
+red:set_timeout(1000)
+
+local ok, err = red:connect("redis", 6379)
+if not ok then
+    ngx.say("{error: \"Not able to connect to redis: " .. err .. "\"}")
+    return
+end
+
 -- validate any specific claims you need here
 -- https://github.com/SkyLothar/lua-resty-jwt#jwt-validators
-local validators = require "resty.jwt-validators"
+--local validators = require "resty.jwt-validators"
 local claim_spec = {
-    -- validators.set_system_leeway(15), -- time in seconds
     -- exp = validators.is_not_expired(),
     -- iat = validators.is_not_before(),
+    -- validators.set_system_leeway(15), -- time in seconds
     -- iss = validators.opt_matches("^http[s]?://yourdomain.auth0.com/$"),
     -- sub = validators.opt_matches("^[0-9]+$"),
-    -- name = validators.equals_any_of({ "John Doe", "Mallory", "Alice", "Bob" }),
+     voucher = function(val)
+         local res, err = red:get(val)
+
+         if err then
+             invalidToken(val)
+             print(err)
+             return
+         end
+
+         if not res then
+             invalidToken(val)
+             return
+         end
+
+         if res == ngx.null then
+             invalidToken(val)
+             return
+         end
+
+         if not res == token then
+             invalidToken(val)
+             return
+         end
+
+         local ok, err = red:set_keepalive(10000, 100)
+         if not ok then
+             ngx.say("failed to set keepalive: ", err)
+             return
+         end
+
+         -- or just close the connection right away:
+         -- local ok, err = red:close()
+         -- if not ok then
+         --     ngx.say("failed to close: ", err)
+         --     return
+         -- end
+     end
 }
 
 -- make sure to set and put "env JWT_SECRET;" in nginx.conf

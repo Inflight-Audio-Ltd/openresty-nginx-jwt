@@ -7,15 +7,8 @@ An easy way to setup JWT Bearer Token authorization for any API endpoint, revers
 ## Run
 This example uses the secret, token, and claims from [jwt.io](https://jwt.io/):
 
-Server:
 ```bash
-docker run --rm \
-           -it \
-           -e JWT_SECRET=secret \
-           -v `pwd`/nginx.conf:/nginx.conf \
-           -v `pwd`/bearer.lua:/bearer.lua \
-           -p 8080:8080 \
-           ubergarm/openresty-nginx-jwt
+docker-compose up
 ```
 
 Client:
