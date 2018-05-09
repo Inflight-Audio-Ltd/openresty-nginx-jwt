@@ -41,7 +41,7 @@ end
 
 -- validate any specific claims you need here
 -- https://github.com/SkyLothar/lua-resty-jwt#jwt-validators
--- local validators = require "resty.jwt-validators"
+--local validators = require "resty.jwt-validators"
 local claim_spec = {
     -- exp = validators.is_not_expired(),
     -- iat = validators.is_not_before(),
@@ -49,10 +49,7 @@ local claim_spec = {
     -- iss = validators.opt_matches("^http[s]?://yourdomain.auth0.com/$"),
     -- sub = validators.opt_matches("^[0-9]+$"),
      voucher = function(val)
-
-         -- Getting first element (without removing them) from Redis list https://redis.io/commands/lindex
-         -- New items in the list should go on top https://redis.io/commands/lpush
-         local res, err = red:lindex(val, 0)
+         local res, err = red:get(val)
 
          if err then
              invalidToken(val)
